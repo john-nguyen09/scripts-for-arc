@@ -1,17 +1,7 @@
 <?php
+$config = require __DIR__ . '/config.php';
 
-//set up variables and enter your credentials here
-$dbname = '';
-$dbhost = 'localhost:9090';
-$dbpass = '';
-$dbuser = 'root';
-
-//set up your master array! Array goes in this or
-$replace_array = [
-    'https://site.com.au' => 'http://site.local',
-    '//site.com.au' => '//site.local',
-    // And path
-];
+extract($config);
 
 //connect to database
 try {
@@ -30,14 +20,17 @@ while ($row = $sth->fetch()) {
     $table_name = $row['table_name'];
     $sth2 = $db->prepare("SHOW COLUMNS FROM `{$table_name}`");
     $sth2->execute();
+    $columns = [];
+
+    while ($column_row = $sth2->fetch()) {
+        $columns[] = $column_row['Field'];
+    }
 
     $replace_sql = "UPDATE `{$table_name}` SET";
     $replace_params = [];
     $replace_columns_sql = [];
     foreach ($replace_array as $find => $replace) {
-        while ($column_row = $sth2->fetch()) {
-            $column = $column_row['Field'];
-
+        foreach ($columns as $column) {
             $replace_columns_sql[] = "`{$column}` = REPLACE(`{$column}`, ?, ?)";
             $replace_params[] = $find;
             $replace_params[] = $replace;
